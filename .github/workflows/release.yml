@@ -1,8 +1,8 @@
 name: "Release Pipeline"
 on:
-  push:
-    tags:
-      - v*
+  #push:
+  #  tags:
+  #    - v*
 jobs:
   package:
     runs-on: ${{ matrix.os }}
