@@ -94,7 +94,8 @@ jobs:
             FAULT_COUNT=$(( $FAULT_COUNT + $LICENSE_COUNT ));
           else
             echo "no dependencies with ${LICENSE} license found"
-          fi        
+          fi      
+          echo "Current Fault Count: ${FAULT_COUNT}"
           
       - name: Archive SBOM
         if: always()
