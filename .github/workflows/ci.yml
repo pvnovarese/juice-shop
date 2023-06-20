@@ -85,10 +85,10 @@ jobs:
           ### if we want to check for other licenses, just copy this step and change the LICENSE
           LICENSE="GPL" 
           ### selecting for .type != "deb" means we're only looking at language dependencies
-          LICENSE_COUNT=$( cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[]|contains($LICENSE))] | length' )
+          LICENSE_COUNT=$( cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index($LICENSE))] | length' )
           if [ ${LICENSE_COUNT} -gt 0 ] ; then
             echo "found ${LICENSE_COUNT} dependencies with ${LICENSE} license:"
-            cat sbom.json | jq --arg LICENSE "${LICENSE}" '.artifacts[] | select ( .type != "deb") | select ( .licenses[]|contains($LICENSE)) | "\(.name) \(.version)"'
+            cat sbom.json | jq --arg LICENSE "${LICENSE}" '.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index($LICENSE)) | "\(.name) \(.version)"'
             FAULT_COUNT=$(( $FAULT_COUNT + $LICENSE_COUNT ));
           else
             echo "no dependencies with ${LICENSE} license found"
