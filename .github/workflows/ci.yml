@@ -89,7 +89,7 @@ jobs:
           echo "Fault count: ${FAULT_COUNT}"
           ### debug
           echo "debug"
-          cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index($LICENSE))]'
+          cat sbom.json | jq --arg LICENSE "${LICENSE}" '.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index($LICENSE))'
           echo "end debug"
           ### selecting for .type != "deb" means we're only looking at language dependencies
           LICENSE_COUNT=$( cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index($LICENSE))] | length' )
