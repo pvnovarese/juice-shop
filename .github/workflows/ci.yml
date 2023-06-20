@@ -90,7 +90,7 @@ jobs:
           ### debug
           echo "debug"
           #cat sbom.json | jq --arg LICENSE "${LICENSE}" '.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index($LICENSE))'
-          cat sbom.json | jq '.artifacts[] | select (.name | contains("1to2")) | "\(.name) \(.version)"
+          cat sbom.json | jq '.artifacts[] | select (.name | contains("1to2")) | "\(.name) \(.version)"'
           echo "end debug"
           ### selecting for .type != "deb" means we're only looking at language dependencies
           LICENSE_COUNT=$( cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index($LICENSE))] | length' )
