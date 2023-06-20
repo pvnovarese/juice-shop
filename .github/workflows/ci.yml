@@ -78,14 +78,16 @@ jobs:
         # get list of critical vulns and output fixes
         run: | 
           grype -o json --only-fixed sbom:sbom.json | jq '.matches[] | select ( .vulnerability.severity == "Critical" ) | "\(.vulnerability.id) \(.vulnerability.severity) \(.artifact.name) \(.artifact.version) fixed in: \(.vulnerability.fix.versions[])"' | tee matches.txt
-          FAULT_COUNT=$(( $FAULT_COUNT + $(wc -l < matches.txt) ))
+          FAULT_COUNT=$(( $FAULT_COUNT + $(wc -l < matches.txt) )) >> $GITHUB_ENV
           echo "Current Fault Count: ${FAULT_COUNT}"
       - name: "GPL License Check"
         run: |
           ### if we want to check for other licenses, just copy this step and change the LICENSE
           LICENSE="GPL" 
           ### debug
-          cat sbom.json | jq '.artifacts[] | select ( .type == "deb") | "\(.name) \(.version)"'
+          echo "debug"
+          cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index($LICENSE))]'
+          echo "end debug"
           ### selecting for .type != "deb" means we're only looking at language dependencies
           LICENSE_COUNT=$( cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index($LICENSE))] | length' )
           if [ ${LICENSE_COUNT} -gt 0 ] ; then
