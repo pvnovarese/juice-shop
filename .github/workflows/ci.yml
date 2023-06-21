@@ -85,13 +85,6 @@ jobs:
         run: |
           ### if we want to check for other licenses, just copy this step and change the LICENSE
           LICENSE="GPL" 
-          echo "License: ${LICENSE}"
-          echo "Fault count: ${FAULT_COUNT}"
-          ### debug
-          echo "debug"
-          echo "contains:"
-          cat sbom.json | jq '.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | contains("GPL"))'
-          echo "end debug"
           ### selecting for .type != "deb" means we're only looking at language dependencies
           LICENSE_COUNT=$( cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | contains($LICENSE))] | length' )
           if [ ${LICENSE_COUNT} -gt 0 ] ; then
@@ -103,7 +96,15 @@ jobs:
             echo "no dependencies with ${LICENSE} license found"
           fi      
           echo "Current Fault Count: ${FAULT_COUNT}"
-          
+      - name: Gate on Faults
+        run: |
+          echo "Total Fault Count: ${FAULT_COUNT}"
+          if [ ${FAULT_COUNT} -gt 0 ] ; then
+            echo "Breaking..."
+            exit 1
+          else
+            echo "No Fatal Faults, Continuing..."
+          fi          
       - name: Archive SBOM
         if: always()
         uses: actions/upload-artifact@v3
