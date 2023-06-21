@@ -89,16 +89,17 @@ jobs:
           echo "Fault count: ${FAULT_COUNT}"
           ### debug
           echo "debug"
-          cat sbom.json | jq '.artifacts[] | select ( .type != "deb") | "\(.name) \(.version) \(.licenses)"'
+          #cat sbom.json | jq '.artifacts[] | select ( .type != "deb") | "\(.name) \(.version) \(.licenses)"'
           #cat sbom.json | jq '.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index("GPL"))'
           #cat sbom.json | jq '.artifacts[] | select ( .type != "deb") | "\(.name) \(.version)"'
           echo "end debug"
           ### selecting for .type != "deb" means we're only looking at language dependencies
-          LICENSE_COUNT=$( cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index($LICENSE))] | length' )
+          LICENSE_COUNT=$( cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[].type | contains($LICENSE))] | length' )
           if [ ${LICENSE_COUNT} -gt 0 ] ; then
             echo "found ${LICENSE_COUNT} dependencies with ${LICENSE} license:"
-            cat sbom.json | jq --arg LICENSE "${LICENSE}" '.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index($LICENSE)) | "\(.name) \(.version)"'
+            cat sbom.json | jq --arg LICENSE "${LICENSE}" '.artifacts[] | select ( .type != "deb") | select ( .licenses[].type | contains($LICENSE)) | "\(.name) \(.version) \(.licenses[].value"'
             FAULT_COUNT=$(( $FAULT_COUNT + $LICENSE_COUNT ));
+            echo "FAULT_COUNT=${FAULT_COUNT}" >> $GITHUB_ENV
           else
             echo "no dependencies with ${LICENSE} license found"
           fi      
