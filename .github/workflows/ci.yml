@@ -89,9 +89,10 @@ jobs:
           echo "Fault count: ${FAULT_COUNT}"
           ### debug
           echo "debug"
-          #cat sbom.json | jq '.artifacts[] | select ( .type != "deb") | "\(.name) \(.version) \(.licenses)"'
-          #cat sbom.json | jq '.artifacts[] | select ( .type != "deb") | select ( .licenses[] | index("GPL"))'
-          #cat sbom.json | jq '.artifacts[] | select ( .type != "deb") | "\(.name) \(.version)"'
+          echo "contains:"
+          cat sbom.json | jq '.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | contains("GPL"))'
+          echo "index:"
+          cat sbom.json | jq '.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | index("GPL"))'
           echo "end debug"
           ### selecting for .type != "deb" means we're only looking at language dependencies
           LICENSE_COUNT=$( cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[].type | contains($LICENSE))] | length' )
