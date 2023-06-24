@@ -91,7 +91,6 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b $HOME/.local/bin v0.84.0
           curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b $HOME/.local/bin v0.62.3
           export PATH="$HOME/.local/bin/:$PATH"     
-      - name: "Download SBOM"
       
       - name: "Vuln Check"
         # get list of critical vulns and output fixes
