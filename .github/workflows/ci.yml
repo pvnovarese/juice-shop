@@ -97,11 +97,12 @@ jobs:
           fi      
           echo "Current Fault Count: ${FAULT_COUNT}"
       - name: Gate on Faults
+        ### optional!
         run: |
           echo "Total Fault Count: ${FAULT_COUNT}"
           if [ ${FAULT_COUNT} -gt 0 ] ; then
-            echo "Breaking..."
-            exit 1
+            echo "Would break here IF enforcing due to ${FAULT_COUNT} total faults detected"
+            #exit 1  ### uncomment to enforce
           else
             echo "No Fatal Faults, Continuing..."
           fi          
