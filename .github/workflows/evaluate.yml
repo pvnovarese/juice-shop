@@ -1,0 +1,141 @@
+name: "Continuous Evaluation Update"
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Manual Build'  
+
+      
+env:
+  REGISTRY: ghcr.io
+
+jobs:          
+  
+
+
+
+
+  
+  
+  test:
+    runs-on: ubuntu-latest
+    needs: sbom-get
+    steps:
+      - name: Download artifact
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          # Optional, GitHub token, a Personal Access Token with `public_repo` scope if needed
+          # Required, if the artifact is from a different repo
+          # Required, if the repo is private a Personal Access Token with `repo` scope is needed or GitHub token in a job where the permissions `action` scope set to `read`
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          # Optional, workflow file name or ID
+          # If not specified, will be inferred from run_id (if run_id is specified), or will be the current workflow
+          workflow: ci.yml
+          # Optional, the status or conclusion of a completed workflow to search for
+          # Can be one of a workflow conclusion:
+          #   "failure", "success", "neutral", "cancelled", "skipped", "timed_out", "action_required"
+          # Or a workflow status:
+          #   "completed", "in_progress", "queued"
+          # Use the empty string ("") to ignore status or conclusion in the search
+          workflow_conclusion: success
+          # Optional, will get head commit SHA
+          #pr: ${{github.event.pull_request.number}}
+          # Optional, no need to specify if PR is
+          #commit: ${{github.event.pull_request.head.sha}}
+          # Optional, will use the specified branch. Defaults to all branches
+          branch: master
+          # Optional, defaults to all types
+          #event: push
+          # Optional, will use specified workflow run
+          # use ${{ github.event.workflow_run.id }} when your action runs in a workflow_run event
+          # and wants to download from the triggering workflow run
+          #run_id: 1122334455
+          # Optional, run number from the workflow
+          #run_number: 34
+          # Optional, uploaded artifact name,
+          # will download all artifacts if not specified
+          # and extract them into respective subdirectories
+          # https://github.com/actions/download-artifact#download-all-artifacts
+          # is treated as a regular expression if input name_is_regexp is true
+          # will download only those artifacts with a name that matches this regular expression
+          # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions
+          name: sbom
+          # Optional, name is treated as a regular expression if set true
+          name_is_regexp: true
+          # Optional, a directory where to extract artifact(s), defaults to the current directory
+          #path: extract_here
+          # Optional, defaults to current repo
+          #repo: ${{ github.repository }}
+          # Optional, check the workflow run to whether it has an artifact
+          # then will get the last available artifact from the previous workflow
+          # default false, just try to download from the last one
+          check_artifacts: false
+          # Optional, search for the last workflow run whose stored an artifact named as in `name` input
+          # default false
+          search_artifacts: false
+          # Optional, choose to skip unpacking the downloaded artifact(s)
+          # default false
+          skip_unpack: false
+          # Optional, choose how to exit the action if no artifact is found
+          # can be one of:
+          #  "fail", "warn", "ignore"
+          # default fail
+          if_no_artifact_found: warn    
+          
+      - name: "Debug listing"
+        run: |
+          pwd
+          ls
+    
+      - name: "Set IMAGE environmental variables"
+        run: |
+          echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV 
+          echo "FAULT_COUNT=0" >> $GITHUB_ENV
+      - name: "Install tools"
+        run: |
+          ### install syft and grype 
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b $HOME/.local/bin v0.84.0
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b $HOME/.local/bin v0.62.3
+          export PATH="$HOME/.local/bin/:$PATH"     
+      - name: "Download SBOM"
+      
+      - name: "Vuln Check"
+        # get list of critical vulns and output fixes
+        run: | 
+          grype -o json --only-fixed sbom:sbom.json | jq '.matches[] | select ( .vulnerability.severity == "Critical" ) | "\(.vulnerability.id) \(.vulnerability.severity) \(.artifact.name) \(.artifact.version) fixed in: \(.vulnerability.fix.versions[])"' | tee matches.txt
+          FAULT_COUNT=$(( $FAULT_COUNT + $(wc -l < matches.txt) ))
+          echo "FAULT_COUNT=${FAULT_COUNT}" >> $GITHUB_ENV
+          echo "Current Fault Count: ${FAULT_COUNT}"
+      - name: "GPL License Check"
+        run: |
+          ### if we want to check for other licenses, just copy this step and change the LICENSE
+          LICENSE="GPL" 
+          ### selecting for .type != "deb" means we're only looking at language dependencies
+          LICENSE_COUNT=$( cat sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | contains($LICENSE))] | length' )
+          if [ ${LICENSE_COUNT} -gt 0 ] ; then
+            echo "found ${LICENSE_COUNT} dependencies with ${LICENSE} license:"
+            cat sbom.json | jq --arg LICENSE "${LICENSE}" '.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | contains($LICENSE)) | "\(.name) \(.version) \(.licenses[].value)"'
+            FAULT_COUNT=$(( $FAULT_COUNT + $LICENSE_COUNT ));
+            echo "FAULT_COUNT=${FAULT_COUNT}" >> $GITHUB_ENV
+          else
+            echo "no dependencies with ${LICENSE} license found"
+          fi      
+          echo "Current Fault Count: ${FAULT_COUNT}"
+      - name: Gate on Faults
+        ### optional!
+        run: |
+          echo "Total Fault Count: ${FAULT_COUNT}"
+          if [ ${FAULT_COUNT} -gt 0 ] ; then
+            echo "Would break here IF enforcing due to ${FAULT_COUNT} total faults detected"
+            #exit 1  ### uncomment to enforce
+          else
+            echo "No Fatal Faults, Continuing..."
+          fi          
+      - name: Archive SBOM
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom.json
+          retention-days: 14          
