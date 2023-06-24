@@ -107,7 +107,7 @@ jobs:
           LICENSE_COUNT=$( cat sbom/sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | contains($LICENSE))] | length' )
           if [ ${LICENSE_COUNT} -gt 0 ] ; then
             echo "found ${LICENSE_COUNT} dependencies with ${LICENSE} license:"
-            cat sbom.json | jq --arg LICENSE "${LICENSE}" '.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | contains($LICENSE)) | "\(.name) \(.version) \(.licenses[].value)"'
+            cat sbom/sbom.json | jq --arg LICENSE "${LICENSE}" '.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | contains($LICENSE)) | "\(.name) \(.version) \(.licenses[].value)"'
             FAULT_COUNT=$(( $FAULT_COUNT + $LICENSE_COUNT ));
             echo "FAULT_COUNT=${FAULT_COUNT}" >> $GITHUB_ENV
           else
