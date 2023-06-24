@@ -79,7 +79,7 @@ jobs:
       - name: "Debug listing"
         run: |
           pwd
-          ls
+          ls -lR
     
       - name: "Set IMAGE environmental variables"
         run: |
