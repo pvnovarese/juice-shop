@@ -110,7 +110,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: sbom
+          name: sbom.json
           path: sbom.json
           retention-days: 14          
 
