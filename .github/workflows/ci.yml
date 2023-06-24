@@ -110,7 +110,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: sbom-${{ github.sha }}
+          name: sbom
           path: sbom.json
           retention-days: 14          
 
