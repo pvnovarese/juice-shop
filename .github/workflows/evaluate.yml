@@ -99,7 +99,7 @@ jobs:
           ### count the number of matches in the file
           MATCH_COUNT=$(wc -l < matches.txt)
           if [ ${MATCH_COUNT} -gt 0 ] ; then
-            FAULT_COUNT=$(( ${FAULT_COUNT} + ${MATCH_COUNT} )) >> $GITHUB_ENV
+            echo "FAULT_COUNT=$(( ${FAULT_COUNT} + ${MATCH_COUNT} ))" >> $GITHUB_ENV
             echo "[WARN] found ${MATCH_COUNT} vulnerabilties beyond our threshold:"
             cat matches.txt
           else
@@ -124,7 +124,7 @@ jobs:
           ###
           LICENSE_COUNT=$(wc -l < licenses.txt)
           if [ ${LICENSE_COUNT} -gt 0 ] ; then
-            FAULT_COUNT=$(( ${FAULT_COUNT} + ${LICENSE_COUNT} )) >> $GITHUB_ENV
+            echo "FAULT_COUNT=$(( ${FAULT_COUNT} + ${LICENSE_COUNT} ))" >> $GITHUB_ENV
             echo "[WARN] found ${LICENSE_COUNT} dependencies with ${LICENSE} license:"
             cat licenses.txt
           else
