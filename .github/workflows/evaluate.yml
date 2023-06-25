@@ -77,16 +77,12 @@ jobs:
           #  "fail", "warn", "ignore"
           # default fail
           if_no_artifact_found: warn    
-          
-      - name: "Debug listing"
-        run: |
-          pwd
-          ls -lR
-    
+              
       - name: "Set IMAGE environmental variables"
         run: |
           echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV 
           echo "FAULT_COUNT=0" >> $GITHUB_ENV
+          
       - name: "Install tools"
         run: |
           ### install syft and grype 
@@ -97,32 +93,41 @@ jobs:
       - name: "Vuln Check"
         # get list of critical vulns and output fixes
         run: | 
+          ### get list of critical vulns with fixes, output to matches.txt
           grype -o json --only-fixed sbom:sbom/sbom.json | jq '.matches[] | select ( .vulnerability.severity == "Critical" ) | "\(.vulnerability.id) \(.vulnerability.severity) \(.artifact.name) \(.artifact.version) fixed in: \(.vulnerability.fix.versions[])"' | tee matches.txt
+          ### count the number of matches in the file
           FAULT_COUNT=$(( $FAULT_COUNT + $(wc -l < matches.txt) ))
           echo "FAULT_COUNT=${FAULT_COUNT}" >> $GITHUB_ENV
           echo "Current Fault Count: ${FAULT_COUNT}"
+          
       - name: "GPL License Check"
         run: |
           ### if we want to check for other licenses, just copy this step and change the LICENSE
           LICENSE="GPL" 
+          LICENSE_COUNT=0
+          ### check the SBOM for any components that are NOT deb packages AND have $LICENSE in 
+          ### their licenses, output to licenses.txt
+          cat sbom/sbom.json | jq --arg LICENSE "${LICENSE}" '.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | contains($LICENSE)) | "\(.name) \(.version) \(.licenses[].value)"' | tee licenses.txt
+          ### count the number of matches in the file
+          LICENSE_COUNT=$(wc -l < licenses.txt)
+          echo "DEBUG: license count: "${LICENSE_COUNT}
+          echo "DEBUG: fault count A: "${FAULT_COUNT}
+          FAULT_COUNT=$(( ${FAULT_COUNT} + ${LICENSE_COUNT} ))
+          echo "DEBUG: fault count B: "${FAULT_COUNT}
           ### selecting for .type != "deb" means we're only looking at language dependencies
-          LICENSE_COUNT=$( cat sbom/sbom.json | jq --arg LICENSE "${LICENSE}" '[.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | contains($LICENSE))] | length' )
           if [ ${LICENSE_COUNT} -gt 0 ] ; then
-            echo "found ${LICENSE_COUNT} dependencies with ${LICENSE} license:"
-            cat sbom/sbom.json | jq --arg LICENSE "${LICENSE}" '.artifacts[] | select ( .type != "deb") | select ( .licenses[].value | contains($LICENSE)) | "\(.name) \(.version) \(.licenses[].value)"'
-            FAULT_COUNT=$(( $FAULT_COUNT + $LICENSE_COUNT ));
-            echo "FAULT_COUNT=${FAULT_COUNT}" >> $GITHUB_ENV
+            echo "WARN: found ${LICENSE_COUNT} dependencies with ${LICENSE} license:"
           else
             echo "no dependencies with ${LICENSE} license found"
           fi      
           echo "Current Fault Count: ${FAULT_COUNT}"
+          
       - name: Gate on Faults
         ### optional!
         run: |
-          echo "Total Fault Count: ${FAULT_COUNT}"
           if [ ${FAULT_COUNT} -gt 0 ] ; then
-            echo "Would break here IF enforcing due to ${FAULT_COUNT} total faults detected"
+            echo "WARN: ${IMAGE} has ${FAULT_COUNT} total faults"
             #exit 1  ### uncomment to enforce
           else
-            echo "No Fatal Faults, Continuing..."
+            echo "INFO: No Fatal Faults detected for ${IMAGE}, continuing..."
           fi          
