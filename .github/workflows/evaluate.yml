@@ -99,13 +99,12 @@ jobs:
           ### count the number of matches in the file
           MATCH_COUNT=$(wc -l < matches.txt)
           if [ ${MATCH_COUNT} -gt 0 ] ; then
-            echo "FAULT_COUNT=$(( ${FAULT_COUNT} + ${MATCH_COUNT} ))" >> $GITHUB_ENV
             echo "[WARN] found ${MATCH_COUNT} vulnerabilties beyond our threshold:"
             cat matches.txt
+            echo "FAULT_COUNT=$(( ${FAULT_COUNT} + ${MATCH_COUNT} ))" >> $GITHUB_ENV
           else
             echo "[INFO] no vulnerabilties beyond our threshold found."
           fi      
-          echo "Current Fault Count: ${FAULT_COUNT}"
           
       - name: "GPL License Check"
         run: |
@@ -124,13 +123,12 @@ jobs:
           ###
           LICENSE_COUNT=$(wc -l < licenses.txt)
           if [ ${LICENSE_COUNT} -gt 0 ] ; then
-            echo "FAULT_COUNT=$(( ${FAULT_COUNT} + ${LICENSE_COUNT} ))" >> $GITHUB_ENV
             echo "[WARN] found ${LICENSE_COUNT} dependencies with ${LICENSE} license:"
             cat licenses.txt
+            echo "FAULT_COUNT=$(( ${FAULT_COUNT} + ${LICENSE_COUNT} ))" >> $GITHUB_ENV
           else
             echo "[INFO] no dependencies with ${LICENSE} license found"
           fi      
-          echo "Current Fault Count: ${FAULT_COUNT}"
           
       - name: Gate on Faults
         ### optional!
