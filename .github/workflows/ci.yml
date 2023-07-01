@@ -8,12 +8,7 @@ on:
       
 env:
   ANGULAR_CLI_VERSION: 13
-  ANCHORECTL_USERNAME: ${{ vars.ANCHORECTL_USERNAME }}
-  ANCHORECTL_PASSWORD: ${{ secrets.ANCHORECTL_PASSWORD }}
-  ANCHORECTL_URL: ${{ vars.ANCHORECTL_URL }}
   REGISTRY: ghcr.io
-  ### if you want to gate on policy, change this to "true"
-  ANCHORECTL_FAIL_BASED_ON_RESULTS: false
 
 jobs:
   build:
