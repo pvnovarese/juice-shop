@@ -6,4 +6,3 @@ services:
       - app
   app:
     image: ghcr.io/pvnovarese/juice-shop:master
-    build: ./
