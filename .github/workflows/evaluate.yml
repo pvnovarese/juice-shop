@@ -134,8 +134,8 @@ jobs:
         ### optional!
         run: |
           if [ ${FAULT_COUNT} -gt 0 ] ; then
-            echo "[WARN] ${IMAGE} has ${FAULT_COUNT} total faults"
-            #exit 1  ### uncomment to enforce
+            echo "FATAL: ${IMAGE} has ${FAULT_COUNT} total faults"
+            exit 1  
           else
             echo "[INFO] No Fatal Faults detected for ${IMAGE}, continuing..."
           fi          
