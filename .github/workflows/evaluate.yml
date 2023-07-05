@@ -1,7 +1,7 @@
 name: "Continuous Evaluation Update"
 on:
-  schedule:
-    - cron: '12 */4 * * *'
+  #schedule:
+  #  - cron: '12 */4 * * *'
   workflow_dispatch:
     inputs:
       mode:
